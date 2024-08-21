@@ -9,7 +9,8 @@ router.post('/', auth, async (req, res) => {
     const newPost = new Post({
       title: req.body.title,
       content: req.body.content,
-      author: req.user.id
+      author: req.user.id,
+      isMarkdown: req.body.isMarkdown
     });
     const post = await newPost.save();
     res.json(post);
@@ -59,11 +60,11 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(401).json({ msg: 'User not authorized' });
     }
 
-    const { title, content } = req.body;
+    const { title, content, isMarkdown } = req.body;
     
     post = await Post.findOneAndUpdate(
       { _id: req.params.id },
-      { $set: { title, content } },
+      { $set: { title, content, isMarkdown } },
       { new: true }
     );
 

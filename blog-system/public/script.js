@@ -5,6 +5,9 @@ const loginBtn = document.getElementById('login');
 const registerBtn = document.getElementById('register');
 const createPostBtn = document.getElementById('create-post');
 const mainHomeBtn = document.getElementById('main-home');
+const toggleFormatBtn = document.getElementById('toggle-format');
+
+let isMarkdownMode = false;
 
 console.log('Content element:', content);
 
@@ -23,10 +26,27 @@ homeBtn.addEventListener('click', showPosts);
 loginBtn.addEventListener('click', showLoginForm);
 registerBtn.addEventListener('click', showRegisterForm);
 createPostBtn.addEventListener('click', showCreatePostForm);
+toggleFormatBtn.addEventListener('click', toggleFormat);
 if (mainHomeBtn) {
     mainHomeBtn.addEventListener('click', function() {
         window.location.href = '/';
     });
+}
+
+function toggleFormat() {
+    isMarkdownMode = !isMarkdownMode;
+    const formatIndicator = document.getElementById('format-indicator');
+    if (formatIndicator) {
+        formatIndicator.textContent = isMarkdownMode ? 'Markdown 格式' : '普通文本';
+    }
+    const postContent = document.getElementById('post-content');
+    if (postContent) {
+        if (isMarkdownMode) {
+            postContent.style.fontFamily = 'monospace';
+        } else {
+            postContent.style.fontFamily = 'inherit';
+        }
+    }
 }
 
 // Functions to show different views
@@ -82,9 +102,12 @@ function showPostDetails(postId) {
     })
     .then(response => response.json())
     .then(post => {
+        const formattedContent = post.isMarkdown ? marked(post.content) : post.content;
         content.innerHTML = `
             <h2>${post.title}</h2>
-            <pre style="white-space: pre-wrap; word-wrap: break-word;">${post.content}</pre>
+            <div id="post-content" class="${post.isMarkdown ? 'markdown-content' : ''}">
+                ${formattedContent}
+            </div>
             <button id="editButton">编辑博客</button>
             <button id="deleteButton">删除博客</button>
             <button onclick="showPosts()">返回列表</button>
@@ -95,7 +118,7 @@ function showPostDetails(postId) {
         if (editButton) {
             editButton.addEventListener('click', function() {
                 console.log('Edit button clicked for post:', postId);
-                showEditForm(post._id, post.title, post.content);
+                showEditForm(post._id, post.title, post.content, post.isMarkdown);
             });
         } else {
             console.error('Edit button not found');
@@ -116,8 +139,8 @@ function showPostDetails(postId) {
     });
 }
 
-function showEditForm(postId, title, postContent) {
-    console.log('showEditForm called with:', { postId, title, postContent });
+function showEditForm(postId, title, postContent, isMarkdown) {
+    console.log('showEditForm called with:', { postId, title, postContent, isMarkdown });
     
     const formContainer = document.createElement('div');
     formContainer.innerHTML = `
@@ -125,6 +148,7 @@ function showEditForm(postId, title, postContent) {
         <form id="edit-post-form">
             <input type="text" id="edit-post-title" value="${title}" required>
             <textarea id="edit-post-content" required style="width: 100%; height: 200px;">${postContent}</textarea>
+            <div id="format-indicator">${isMarkdown ? 'Markdown 格式' : '普通文本'}</div>
             <div class="button-group">
                 <button type="submit">更新博客</button>
                 <button type="button" id="cancel-edit">取消</button>
@@ -145,7 +169,7 @@ function showEditForm(postId, title, postContent) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Edit form submitted');
-            handleEditPost(postId);
+            handleEditPost(postId, isMarkdown);
         });
         console.log('Form submit event listener added');
     } else {
@@ -161,9 +185,12 @@ function showEditForm(postId, title, postContent) {
     } else {
         console.error('Cancel button not found');
     }
+
+    isMarkdownMode = isMarkdown;
+    toggleFormat();
 }
 
-function handleEditPost(postId) {
+function handleEditPost(postId, isMarkdown) {
     console.log('handleEditPost called with postId:', postId);
     const title = document.getElementById('edit-post-title').value;
     const content = document.getElementById('edit-post-content').value;
@@ -173,7 +200,7 @@ function handleEditPost(postId) {
         return;
     }
 
-    console.log('Sending update request with:', { title, content });
+    console.log('Sending update request with:', { title, content, isMarkdown });
 
     fetch(`/blog-system/api/posts/${postId}`, {
         method: 'PUT',
@@ -181,7 +208,7 @@ function handleEditPost(postId) {
             'Content-Type': 'application/json',
             'x-auth-token': token
         },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content, isMarkdown }),
     })
     .then(response => {
         console.log('Update response received:', response);
@@ -235,10 +262,13 @@ function showCreatePostForm() {
         <form id="create-post-form">
             <input type="text" id="post-title" placeholder="Title" required>
             <textarea id="post-content" placeholder="Content" required></textarea>
+            <div id="format-indicator">普通文本</div>
             <button type="submit">Create Post</button>
         </form>
     `;
     document.getElementById('create-post-form').addEventListener('submit', handleCreatePost);
+    isMarkdownMode = false;
+    toggleFormat();
 }
 
 // Handle form submissions
@@ -379,7 +409,7 @@ function handleCreatePost(e) {
             'Content-Type': 'application/json',
             'x-auth-token': token
         },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content, isMarkdown: isMarkdownMode }),
     })
     .then(response => {
         if (!response.ok) {

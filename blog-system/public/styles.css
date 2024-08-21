@@ -108,7 +108,6 @@ pre {
   color: #fff;
 }
 
-
 .button-group {
     display: flex;
     justify-content: flex-start;
@@ -125,4 +124,18 @@ pre {
 
 #cancel-edit:hover {
     background-color: #c0392b;
+}
+
+#format-indicator {
+    margin-bottom: 10px;
+    font-style: italic;
+    color: #666;
+}
+
+.markdown-content {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#toggle-format {
+    margin-bottom: 20px;
 }
