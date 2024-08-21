@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待办事项列表</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .nav-bar {
+            background-color: #333;
+            padding: 10px;
+            text-align: center;
+        }
+        .nav-bar a {
+            color: white;
+            padding: 10px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .nav-bar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="/">首页</a>
+        <a href="javascript:history.back()">返回上一页</a>
+    </div>
+    <div class="container">
+        <h1>待办事项列表</h1>
+        <form id="todo-form">
+            <input type="text" id="todo-input" placeholder="添加新的待办事项" required>
+            <button type="submit">添加</button>
+        </form>
+        <ul id="todo-list"></ul>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
