@@ -29,7 +29,6 @@ if (mainHomeBtn) {
     });
 }
 
-// Functions to show different views
 function showPosts() {
     console.log('Showing posts');
     const token = localStorage.getItem('token');
@@ -82,16 +81,13 @@ function showPostDetails(postId) {
     })
     .then(response => response.json())
     .then(post => {
-        let formattedContent;
-        if (post.isMarkdown) {
-            formattedContent = marked(post.content);
-        } else {
-            formattedContent = post.content.replace(/\n/g, '<br>');
-        }
         content.innerHTML = `
             <h2>${post.title}</h2>
-            <div id="post-content" class="${post.isMarkdown ? 'markdown-content' : ''}">
-                ${formattedContent}
+            <div id="post-content">
+                ${post.content}
+            </div>
+            <div id="attachment-list">
+                ${post.attachments.map(att => `<a href="/uploads/${att.filename}" target="_blank">${att.filename}</a>`).join('<br>')}
             </div>
             <button id="editButton">编辑博客</button>
             <button id="deleteButton">删除博客</button>
@@ -103,7 +99,7 @@ function showPostDetails(postId) {
         if (editButton) {
             editButton.addEventListener('click', function() {
                 console.log('Edit button clicked for post:', postId);
-                showEditForm(post._id, post.title, post.content, post.isMarkdown);
+                showEditForm(post._id, post.title, post.content);
             });
         } else {
             console.error('Edit button not found');
@@ -124,38 +120,208 @@ function showPostDetails(postId) {
     });
 }
 
-
-function showEditForm(postId, title, postContent, isMarkdown) {
-    console.log('showEditForm called with:', { postId, title, postContent, isMarkdown });
-    
-    const formContainer = document.createElement('div');
-    formContainer.innerHTML = `
-        <h2>编辑博客</h2>
-        <form id="edit-post-form">
-            <input type="text" id="edit-post-title" value="${title}" required>
-            <div class="toolbar">
-                <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
-                <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
-                <button type="button" onclick="formatText('strikethrough')"><i class="fas fa-strikethrough"></i></button>
-                <button type="button" onclick="formatText('link')"><i class="fas fa-link"></i></button>
-                <button type="button" onclick="formatText('unorderedList')"><i class="fas fa-list-ul"></i></button>
-                <button type="button" onclick="formatText('orderedList')"><i class="fas fa-list-ol"></i></button>
-                <button type="button" onclick="formatText('image')"><i class="fas fa-image"></i></button>
-                <button type="button" onclick="formatText('horizontalRule')"><i class="fas fa-minus"></i></button>
-                <button type="button" onclick="formatText('codeBlock')"><i class="fas fa-code"></i></button>
-                <button type="button" onclick="toggleMarkdown()"><i class="fab fa-markdown"></i></button>
-                <button type="button" onclick="formatText('inlineCode')"><i class="fas fa-terminal"></i></button>
+function showCreatePostForm() {
+    console.log('Showing create post form');
+    content.innerHTML = `
+        <h2>创建新博客</h2>
+        <form id="create-post-form">
+            <input type="text" id="post-title" placeholder="标题" required>
+            <div class="editor-container">
+                <div class="toolbar">
+                    <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                    <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                    <button type="button" onclick="formatText('strikethrough')"><i class="fas fa-strikethrough"></i></button>
+                    <button type="button" onclick="formatText('link')"><i class="fas fa-link"></i></button>
+                    <button type="button" onclick="formatText('unorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" onclick="formatText('orderedList')"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" onclick="insertImage()"><i class="fas fa-image"></i></button>
+                    <button type="button" onclick="formatText('horizontalRule')"><i class="fas fa-minus"></i></button>
+                    <button type="button" onclick="formatText('codeBlock')"><i class="fas fa-code"></i></button>
+                </div>
+                <div id="editor" contenteditable="true"></div>
             </div>
-            <textarea id="edit-post-content" required>${postContent}</textarea>
             <div id="only-me-toggle">
                 <input type="checkbox" id="only-me" name="only-me">
                 <label for="only-me">仅自己可见</label>
             </div>
-            <div id="attachment-upload">
-                <input type="file" id="attachment-input" multiple>
-                <button type="button" onclick="uploadAttachment()">上传附件</button>
+            <div id="attachment-list"></div>
+            <div id="drag-drop-area">
+                拖放文件到这里或者 <label for="file-input" class="file-input-label">选择文件</label>
+                <input type="file" id="file-input" multiple style="display: none;">
             </div>
-            <ul id="attachment-list"></ul>
+            <button type="submit">发布博客</button>
+        </form>
+    `;
+    document.getElementById('create-post-form').addEventListener('submit', handleCreatePost);
+    document.getElementById('file-input').addEventListener('change', handleFileSelect);
+    setupDragAndDrop();
+}
+
+function formatText(format) {
+    document.execCommand(format, false, null);
+}
+
+function insertImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.execCommand('insertImage', false, event.target.result);
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+    input.click();
+}
+
+function handleFileSelect(event) {
+    const files = event.target.files;
+    handleFiles(files);
+}
+
+function setupDragAndDrop() {
+    const dragDropArea = document.getElementById('drag-drop-area');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dragDropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dragDropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dragDropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dragDropArea.classList.add('highlight');
+    }
+
+    function unhighlight(e) {
+        dragDropArea.classList.remove('highlight');
+    }
+
+    dragDropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+}
+
+function handleFiles(files) {
+    const attachmentList = document.getElementById('attachment-list');
+    [...files].forEach(file => {
+        const listItem = document.createElement('div');
+        listItem.className = 'attachment-item';
+        listItem.innerHTML = `
+            <span>${file.name}</span>
+            <button onclick="removeAttachment(this)">删除</button>
+        `;
+        attachmentList.appendChild(listItem);
+    });
+}
+
+function removeAttachment(button) {
+    button.parentElement.remove();
+}
+
+function handleCreatePost(e) {
+    e.preventDefault();
+    const title = document.getElementById('post-title').value;
+    const content = document.getElementById('editor').innerHTML;
+    const onlyMe = document.getElementById('only-me').checked;
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        showMessage('请先登录再创建博客。', true);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('content', content);
+    formData.append('onlyMe', onlyMe);
+
+    // 添加附件
+    const attachmentItems = document.querySelectorAll('.attachment-item');
+    attachmentItems.forEach((item, index) => {
+        const fileName = item.querySelector('span').textContent;
+        const file = document.getElementById('file-input').files[fileName] || 
+                     document.querySelector('#drag-drop-area input[type="file"]').files[fileName];
+        if (file) {
+            formData.append(`attachment${index}`, file);
+        }
+    });
+
+    fetch('/blog-system/api/posts', {
+        method: 'POST',
+        headers: {
+            'x-auth-token': token
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to create post');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data._id) {
+            showMessage('博客创建成功！');
+            showPosts();
+        } else {
+            throw new Error(data.msg || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('创建博客时出错: ' + error.message, true);
+    });
+}
+
+function showEditForm(postId, title, postContent) {
+    console.log('showEditForm called with:', { postId, title, postContent });
+    
+    content.innerHTML = `
+        <h2>编辑博客</h2>
+        <form id="edit-post-form">
+            <input type="text" id="edit-post-title" value="${title}" required>
+            <div class="editor-container">
+                <div class="toolbar">
+                    <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                    <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                    <button type="button" onclick="formatText('strikethrough')"><i class="fas fa-strikethrough"></i></button>
+                    <button type="button" onclick="formatText('link')"><i class="fas fa-link"></i></button>
+                    <button type="button" onclick="formatText('unorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" onclick="formatText('orderedList')"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" onclick="insertImage()"><i class="fas fa-image"></i></button>
+                    <button type="button" onclick="formatText('horizontalRule')"><i class="fas fa-minus"></i></button>
+                    <button type="button" onclick="formatText('codeBlock')"><i class="fas fa-code"></i></button>
+                </div>
+                <div id="editor" contenteditable="true">${postContent}</div>
+            </div>
+            <div id="only-me-toggle">
+                <input type="checkbox" id="only-me" name="only-me">
+                <label for="only-me">仅自己可见</label>
+            </div>
+            <div id="attachment-list"></div>
+            <div id="drag-drop-area">
+                拖放文件到这里或者 <label for="file-input" class="file-input-label">选择文件</label>
+                <input type="file" id="file-input" multiple style="display: none;">
+            </div>
             <div class="button-group">
                 <button type="submit">更新博客</button>
                 <button type="button" id="cancel-edit">取消</button>
@@ -163,26 +329,15 @@ function showEditForm(postId, title, postContent, isMarkdown) {
         </form>
     `;
     
-    content.innerHTML = '';
-    content.appendChild(formContainer);
-    
-    console.log('Edit form HTML set');
-    
     const form = document.getElementById('edit-post-form');
     const cancelButton = document.getElementById('cancel-edit');
-    const textarea = document.getElementById('edit-post-content');
-    const markdownButton = document.querySelector('button[onclick="toggleMarkdown()"]');
-
-    // 设置初始状态
-    textarea.setAttribute('data-markdown', isMarkdown.toString());
-    markdownButton.innerHTML = isMarkdown ? '<i class="fab fa-markdown"></i> 禁用Markdown' : '<i class="fab fa-markdown"></i> 启用Markdown';
 
     if (form) {
         console.log('Form element found');
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Edit form submitted');
-            handleEditPost(postId, textarea.getAttribute('data-markdown') === 'true');
+            handleEditPost(postId);
         });
         console.log('Form submit event listener added');
     } else {
@@ -198,13 +353,15 @@ function showEditForm(postId, title, postContent, isMarkdown) {
     } else {
         console.error('Cancel button not found');
     }
+
+    document.getElementById('file-input').addEventListener('change', handleFileSelect);
+    setupDragAndDrop();
 }
 
-
-function handleEditPost(postId, isMarkdown) {
+function handleEditPost(postId) {
     console.log('handleEditPost called with postId:', postId);
     const title = document.getElementById('edit-post-title').value;
-    const content = document.getElementById('edit-post-content').value;
+    const content = document.getElementById('editor').innerHTML;
     const onlyMe = document.getElementById('only-me').checked;
     const token = localStorage.getItem('token');
 
@@ -212,15 +369,28 @@ function handleEditPost(postId, isMarkdown) {
         return;
     }
 
-    console.log('Sending update request with:', { title, content, isMarkdown, onlyMe });
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('content', content);
+    formData.append('onlyMe', onlyMe);
+
+    // 添加附件
+    const attachmentItems = document.querySelectorAll('.attachment-item');
+    attachmentItems.forEach((item, index) => {
+        const fileName = item.querySelector('span').textContent;
+        const file = document.getElementById('file-input').files[fileName] || 
+                     document.querySelector('#drag-drop-area input[type="file"]').files[fileName];
+        if (file) {
+formData.append(`attachment${index}`, file);
+        }
+    });
 
     fetch(`/blog-system/api/posts/${postId}`, {
         method: 'PUT',
         headers: {
-            'Content-Type': 'application/json',
             'x-auth-token': token
         },
-        body: JSON.stringify({ title, content, isMarkdown, onlyMe }),
+        body: formData
     })
     .then(response => {
         console.log('Update response received:', response);
@@ -240,14 +410,42 @@ function handleEditPost(postId, isMarkdown) {
     });
 }
 
+function deletePost(postId) {
+    if (!confirm('您确定要删除这篇博客吗？')) {
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    fetch(`/blog-system/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+            'x-auth-token': token
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.msg === 'Post removed') {
+            showMessage('博客删除成功！');
+            showPosts();
+        } else {
+            throw new Error(data.msg || 'Failed to delete post');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('删除博客时出错: ' + error.message, true);
+    });
+}
+
 function showLoginForm() {
     console.log('Showing login form');
     content.innerHTML = `
-        <h2>Login</h2>
+        <h2>登录</h2>
         <form id="login-form">
-            <input type="email" id="login-email" placeholder="Email" required>
-            <input type="password" id="login-password" placeholder="Password" required>
-            <button type="submit">Login</button>
+            <input type="email" id="login-email" placeholder="邮箱" required>
+            <input type="password" id="login-password" placeholder="密码" required>
+            <button type="submit">登录</button>
         </form>
     `;
     document.getElementById('login-form').addEventListener('submit', handleLogin);
@@ -256,50 +454,15 @@ function showLoginForm() {
 function showRegisterForm() {
     console.log('Showing register form');
     content.innerHTML = `
-        <h2>Register</h2>
+        <h2>注册</h2>
         <form id="register-form">
-            <input type="text" id="register-username" placeholder="Username" required>
-            <input type="email" id="register-email" placeholder="Email" required>
-            <input type="password" id="register-password" placeholder="Password" required>
-            <button type="submit">Register</button>
+            <input type="text" id="register-username" placeholder="用户名" required>
+            <input type="email" id="register-email" placeholder="邮箱" required>
+            <input type="password" id="register-password" placeholder="密码" required>
+            <button type="submit">注册</button>
         </form>
     `;
     document.getElementById('register-form').addEventListener('submit', handleRegister);
-}
-
-function showCreatePostForm() {
-    console.log('Showing create post form');
-    content.innerHTML = `
-        <h2>创建新博客</h2>
-        <form id="create-post-form">
-            <input type="text" id="post-title" placeholder="标题" required>
-            <div class="toolbar">
-                <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
-                <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
-                <button type="button" onclick="formatText('strikethrough')"><i class="fas fa-strikethrough"></i></button>
-                <button type="button" onclick="formatText('link')"><i class="fas fa-link"></i></button>
-                <button type="button" onclick="formatText('unorderedList')"><i class="fas fa-list-ul"></i></button>
-                <button type="button" onclick="formatText('orderedList')"><i class="fas fa-list-ol"></i></button>
-                <button type="button" onclick="formatText('image')"><i class="fas fa-image"></i></button>
-                <button type="button" onclick="formatText('horizontalRule')"><i class="fas fa-minus"></i></button>
-                <button type="button" onclick="formatText('codeBlock')"><i class="fas fa-code"></i></button>
-                <button type="button" onclick="toggleMarkdown()"><i class="fab fa-markdown"></i></button>
-                <button type="button" onclick="formatText('inlineCode')"><i class="fas fa-terminal"></i></button>
-            </div>
-            <textarea id="post-content" placeholder="内容" required></textarea>
-            <div id="only-me-toggle">
-                <input type="checkbox" id="only-me" name="only-me">
-                <label for="only-me">仅自己可见</label>
-            </div>
-            <div id="attachment-upload">
-                <input type="file" id="attachment-input" multiple>
-                <button type="button" onclick="uploadAttachment()">上传附件</button>
-            </div>
-            <ul id="attachment-list"></ul>
-            <button type="submit">发布博客</button>
-        </form>
-    `;
-    document.getElementById('create-post-form').addEventListener('submit', handleCreatePost);
 }
 
 function handleLogin(e) {
@@ -373,74 +536,6 @@ function handleRegister(e) {
     });
 }
 
-function handleCreatePost(e) {
-    e.preventDefault();
-    const title = document.getElementById('post-title').value;
-    const content = document.getElementById('post-content').value;
-    const onlyMe = document.getElementById('only-me').checked;
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-        showMessage('请先登录再创建博客。', true);
-        return;
-    }
-
-    fetch('/blog-system/api/posts', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': token
-        },
-        body: JSON.stringify({ title, content, onlyMe }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to create post');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data._id) {
-            showMessage('博客创建成功！');
-            showPosts();
-        } else {
-            throw new Error(data.msg || 'Unknown error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('创建博客时出错: ' + error.message, true);
-    });
-}
-
-function deletePost(postId) {
-    if (!confirm('您确定要删除这篇博客吗？')) {
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-
-    fetch(`/blog-system/api/posts/${postId}`, {
-        method: 'DELETE',
-        headers: {
-            'x-auth-token': token
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.msg === 'Post removed') {
-            showMessage('博客删除成功！');
-            showPosts();
-        } else {
-            throw new Error(data.msg || 'Failed to delete post');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('删除博客时出错: ' + error.message, true);
-    });
-}
-
 function updateNavigation() {
     console.log('Updating navigation');
     const token = localStorage.getItem('token');
@@ -488,110 +583,6 @@ function handleLogout() {
     localStorage.removeItem('username');
     updateNavigation();
     showLoginForm();
-}
-
-function formatText(format) {
-    const textarea = document.getElementById('post-content') || document.getElementById('edit-post-content');
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = textarea.value.substring(start, end);
-    let formattedText = '';
-
-    switch(format) {
-        case 'bold':
-            formattedText = `**${selectedText}**`;
-            break;
-        case 'italic':
-            formattedText = `*${selectedText}*`;
-            break;
-        case 'strikethrough':
-            formattedText = `~~${selectedText}~~`;
-            break;
-        case 'link':
-            const url = prompt('Enter URL:');
-            formattedText = `[${selectedText}](${url})`;
-            break;
-        case 'unorderedList':
-            formattedText = `\n- ${selectedText}`;
-            break;
-        case 'orderedList':
-            formattedText = `\n1. ${selectedText}`;
-            break;
-        case 'image':
-            const imageUrl = prompt('Enter image URL:');
-            formattedText = `![${selectedText}](${imageUrl})`;
-            break;
-        case 'horizontalRule':
-            formattedText = `\n\n---\n\n`;
-            break;
-        case 'codeBlock':
-            formattedText = `\n\`\`\`\n${selectedText}\n\`\`\`\n`;
-            break;
-        case 'inlineCode':
-            formattedText = `\`${selectedText}\``;
-            break;
-    }
-
-    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
-    textarea.focus();
-    textarea.selectionStart = start + formattedText.length;
-    textarea.selectionEnd = start + formattedText.length;
-}
-
-function toggleMarkdown() {
-    const textarea = document.getElementById('post-content') || document.getElementById('edit-post-content');
-    const markdownButton = document.querySelector('button[onclick="toggleMarkdown()"]');
-    const isMarkdown = textarea.getAttribute('data-markdown') === 'true';
-    
-    if (isMarkdown) {
-        // 从Markdown转换为普通文本
-        textarea.value = textarea.value
-            .replace(/^# (.+)$/gm, '$1')
-            .replace(/^## (.+)$/gm, '$1')
-            .replace(/^### (.+)$/gm, '$1')
-            .replace(/^#### (.+)$/gm, '$1')
-            .replace(/^##### (.+)$/gm, '$1')
-            .replace(/^###### (.+)$/gm, '$1')
-            .replace(/^\* (.+)$/gm, '$1')
-            .replace(/^- (.+)$/gm, '$1')
-            .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
-        textarea.setAttribute('data-markdown', 'false');
-        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> 启用Markdown';
-    } else {
-        // 从普通文本转换为Markdown
-        textarea.value = textarea.value
-            .replace(/^(.+)$/gm, (match, p1) => {
-                if (p1.startsWith('#') || p1.startsWith('-') || p1.startsWith('*') || /^\d+\./.test(p1)) {
-                    return p1;  // 如果已经是Markdown格式，保持不变
-                } else {
-                    return `# ${p1}`;  // 否则，添加一级标题
-                }
-            });
-        textarea.setAttribute('data-markdown', 'true');
-        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> 禁用Markdown';
-    }
-}
-
-
-function uploadAttachment() {
-    const input = document.getElementById('attachment-input');
-    const files = input.files;
-    if (files.length === 0) {
-        showMessage('请选择要上传的文件', true);
-        return;
-    }
-
-    // 这里应该实现文件上传的逻辑，可能需要创建一个新的API端点来处理文件上传
-    // 为了演示，我们只是将文件名添加到列表中
-    const attachmentList = document.getElementById('attachment-list');
-    for (let file of files) {
-        const li = document.createElement('li');
-        li.textContent = file.name;
-        attachmentList.appendChild(li);
-    }
-
-    showMessage('附件上传成功！');
-    input.value = ''; // 清空input，允许再次上传相同的文件
 }
 
 // Initialize the app

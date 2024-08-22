@@ -75,26 +75,92 @@ button:hover {
 form {
   display: flex;
   flex-direction: column;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-input, textarea {
+input, #editor {
   margin-bottom: 1rem;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
 
-textarea {
-  min-height: 300px;
+#editor {
+  min-height: 200px;
+  background-color: white;
 }
 
-pre {
-  background-color: #f8f8f8;
+.editor-container {
   border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 15px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.toolbar {
+  background-color: #f0f0f0;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.toolbar button {
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 5px 10px;
+  margin: 0 5px 5px 0;
+  font-size: 14px;
+}
+
+.toolbar button:hover {
+  background-color: #e0e0e0;
+}
+
+#drag-drop-area {
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  margin-top: 20px;
+  transition: background-color 0.3s ease;
+}
+
+#drag-drop-area.highlight {
+  background-color: #e0e0e0;
+}
+
+.file-input-label {
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+#attachment-list {
+  margin-top: 20px;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f0f0f0;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 4px;
+}
+
+.attachment-item button {
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.attachment-item button:hover {
+  background-color: #c0392b;
 }
 
 .user-info {
@@ -108,66 +174,24 @@ pre {
   color: #fff;
 }
 
-.button-group {
-  display: flex;
-  justify-content: flex-start;
-  gap: 10px;
-}
-
-.button-group button {
-  flex: 0 1 auto;
-}
-
-#cancel-edit {
+#logoutBtn {
   background-color: #e74c3c;
 }
 
-#cancel-edit:hover {
+#logoutBtn:hover {
   background-color: #c0392b;
 }
 
-.markdown-content {
-  font-family: 'Courier New', Courier, monospace;
-}
-
-.toolbar {
+.button-group {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  margin-top: 1rem;
 }
 
-.toolbar button {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
-  padding: 5px 10px;
-  font-size: 14px;
+#cancel-edit {
+  background-color: #95a5a6;
 }
 
-.toolbar button:hover {
-  background-color: #e0e0e0;
-}
-
-#only-me-toggle {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-#only-me-toggle input {
-  margin-right: 5px;
-}
-
-#attachment-list {
-  list-style-type: none;
-  padding: 0;
-}
-
-#attachment-list li {
-  margin-bottom: 5px;
-}
-
-#attachment-upload {
-  margin-bottom: 10px;
+#cancel-edit:hover {
+  background-color: #7f8c8d;
 }
