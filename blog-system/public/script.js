@@ -527,7 +527,37 @@ function formatText(format) {
 
 function toggleMarkdown() {
     const textarea = document.getElementById('post-content') || document.getElementById('edit-post-content');
-    textarea.value = marked(textarea.value);
+    const markdownButton = document.querySelector('button[onclick="toggleMarkdown()"]');
+    
+    if (textarea.getAttribute('data-markdown') === 'true') {
+        // Convert from Markdown to plain text
+        textarea.value = textarea.value
+            .replace(/^# (.+)$/gm, '$1')
+            .replace(/^## (.+)$/gm, '$1')
+            .replace(/^### (.+)$/gm, '$1')
+            .replace(/^#### (.+)$/gm, '$1')
+            .replace(/^##### (.+)$/gm, '$1')
+            .replace(/^###### (.+)$/gm, '$1')
+            .replace(/^\* (.+)$/gm, '$1')
+            .replace(/^- (.+)$/gm, '$1')
+            .replace(/^1\. (.+)$/gm, '$1')
+            .replace(/\*\*(.+?)\*\*/g, '$1')
+            .replace(/\*(.+?)\*/g, '$1')
+            .replace(/~~(.+?)~~/g, '$1')
+            .replace(/\[(.+?)\]\((.+?)\)/g, '$1 ($2)')
+            .replace(/!\[(.+?)\]\((.+?)\)/g, 'Image: $1 ($2)')
+            .replace(/`(.+?)`/g, '$1')
+            .replace(/```[\s\S]*?```/g, '');
+        textarea.setAttribute('data-markdown', 'false');
+        markdownButton.textContent = 'Enable Markdown';
+    } else {
+        // Convert from plain text to Markdown
+        textarea.value = textarea.value
+            .replace(/^(.+)$/gm, '# $1')
+            .replace(/^(.+)$/gm, (match, p1) => p1.startsWith('# ') ? p1 : `- ${p1}`);
+        textarea.setAttribute('data-markdown', 'true');
+        markdownButton.textContent = 'Disable Markdown';
+    }
 }
 
 function uploadAttachment() {

@@ -4,11 +4,15 @@ const auth = require('../middleware/auth');
 const Post = require('../models/Post');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 // 配置 multer 用于文件上传
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/') // 确保这个目录存在
+    const dir = 'uploads/'
+    // 确保目录存在
+    fs.mkdirSync(dir, { recursive: true })
+    cb(null, dir)
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname)) //Appending extension
@@ -24,8 +28,8 @@ router.post('/', auth, upload.array('attachments', 5), async (req, res) => {
       title: req.body.title,
       content: req.body.content,
       author: req.user.id,
-      isMarkdown: req.body.isMarkdown,
-      onlyMe: req.body.onlyMe,
+      isMarkdown: req.body.isMarkdown === 'true',
+      onlyMe: req.body.onlyMe === 'true',
       attachments: req.files ? req.files.map(file => ({
         filename: file.originalname,
         path: file.path
@@ -60,7 +64,7 @@ router.get('/:id', auth, async (req, res) => {
     res.json(post);
   } catch (err) {
     console.error(err.message);
-if (err.kind === 'ObjectId') {
+    if (err.kind === 'ObjectId') {
       return res.status(404).json({ msg: 'Post not found' });
     }
     res.status(500).send('Server Error');
@@ -84,8 +88,8 @@ router.put('/:id', auth, upload.array('attachments', 5), async (req, res) => {
     
     post.title = title;
     post.content = content;
-    post.isMarkdown = isMarkdown;
-    post.onlyMe = onlyMe;
+    post.isMarkdown = isMarkdown === 'true';
+    post.onlyMe = onlyMe === 'true';
 
     // Add new attachments
     if (req.files && req.files.length > 0) {
@@ -117,6 +121,13 @@ router.delete('/:id', auth, async (req, res) => {
     if (post.author.toString() !== req.user.id) {
       return res.status(401).json({ msg: 'User not authorized' });
     }
+
+    // Delete associated files
+    post.attachments.forEach(attachment => {
+      fs.unlink(attachment.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    });
 
     await Post.findOneAndDelete({ _id: req.params.id });
     res.json({ msg: 'Post removed' });
