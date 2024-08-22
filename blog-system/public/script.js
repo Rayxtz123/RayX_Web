@@ -5,9 +5,6 @@ const loginBtn = document.getElementById('login');
 const registerBtn = document.getElementById('register');
 const createPostBtn = document.getElementById('create-post');
 const mainHomeBtn = document.getElementById('main-home');
-const toggleFormatBtn = document.getElementById('toggle-format');
-
-let isMarkdownMode = false;
 
 console.log('Content element:', content);
 
@@ -26,27 +23,10 @@ homeBtn.addEventListener('click', showPosts);
 loginBtn.addEventListener('click', showLoginForm);
 registerBtn.addEventListener('click', showRegisterForm);
 createPostBtn.addEventListener('click', showCreatePostForm);
-toggleFormatBtn.addEventListener('click', toggleFormat);
 if (mainHomeBtn) {
     mainHomeBtn.addEventListener('click', function() {
         window.location.href = '/';
     });
-}
-
-function toggleFormat() {
-    isMarkdownMode = !isMarkdownMode;
-    const formatIndicator = document.getElementById('format-indicator');
-    if (formatIndicator) {
-        formatIndicator.textContent = isMarkdownMode ? 'Markdown 格式' : '普通文本';
-    }
-    const postContent = document.getElementById('post-content');
-    if (postContent) {
-        if (isMarkdownMode) {
-            postContent.style.fontFamily = 'monospace';
-        } else {
-            postContent.style.fontFamily = 'inherit';
-        }
-    }
 }
 
 // Functions to show different views
@@ -147,8 +127,29 @@ function showEditForm(postId, title, postContent, isMarkdown) {
         <h2>编辑博客</h2>
         <form id="edit-post-form">
             <input type="text" id="edit-post-title" value="${title}" required>
-            <textarea id="edit-post-content" required style="width: 100%; height: 200px;">${postContent}</textarea>
-            <div id="format-indicator">${isMarkdown ? 'Markdown 格式' : '普通文本'}</div>
+            <div class="toolbar">
+                <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                <button type="button" onclick="formatText('strikethrough')"><i class="fas fa-strikethrough"></i></button>
+                <button type="button" onclick="formatText('link')"><i class="fas fa-link"></i></button>
+                <button type="button" onclick="formatText('unorderedList')"><i class="fas fa-list-ul"></i></button>
+                <button type="button" onclick="formatText('orderedList')"><i class="fas fa-list-ol"></i></button>
+                <button type="button" onclick="formatText('image')"><i class="fas fa-image"></i></button>
+                <button type="button" onclick="formatText('horizontalRule')"><i class="fas fa-minus"></i></button>
+                <button type="button" onclick="formatText('codeBlock')"><i class="fas fa-code"></i></button>
+                <button type="button" onclick="toggleMarkdown()"><i class="fab fa-markdown"></i></button>
+                <button type="button" onclick="formatText('inlineCode')"><i class="fas fa-terminal"></i></button>
+            </div>
+            <textarea id="edit-post-content" required>${postContent}</textarea>
+            <div id="only-me-toggle">
+                <input type="checkbox" id="only-me" name="only-me">
+                <label for="only-me">仅自己可见</label>
+            </div>
+            <div id="attachment-upload">
+                <input type="file" id="attachment-input" multiple>
+                <button type="button" onclick="uploadAttachment()">上传附件</button>
+            </div>
+            <ul id="attachment-list"></ul>
             <div class="button-group">
                 <button type="submit">更新博客</button>
                 <button type="button" id="cancel-edit">取消</button>
@@ -185,22 +186,20 @@ function showEditForm(postId, title, postContent, isMarkdown) {
     } else {
         console.error('Cancel button not found');
     }
-
-    isMarkdownMode = isMarkdown;
-    toggleFormat();
 }
 
 function handleEditPost(postId, isMarkdown) {
     console.log('handleEditPost called with postId:', postId);
     const title = document.getElementById('edit-post-title').value;
     const content = document.getElementById('edit-post-content').value;
+    const onlyMe = document.getElementById('only-me').checked;
     const token = localStorage.getItem('token');
 
     if (!confirm('确定要更新这篇博客吗？')) {
         return;
     }
 
-    console.log('Sending update request with:', { title, content, isMarkdown });
+    console.log('Sending update request with:', { title, content, isMarkdown, onlyMe });
 
     fetch(`/blog-system/api/posts/${postId}`, {
         method: 'PUT',
@@ -208,7 +207,7 @@ function handleEditPost(postId, isMarkdown) {
             'Content-Type': 'application/json',
             'x-auth-token': token
         },
-        body: JSON.stringify({ title, content, isMarkdown }),
+        body: JSON.stringify({ title, content, isMarkdown, onlyMe }),
     })
     .then(response => {
         console.log('Update response received:', response);
@@ -258,20 +257,38 @@ function showRegisterForm() {
 function showCreatePostForm() {
     console.log('Showing create post form');
     content.innerHTML = `
-        <h2>Create New Post</h2>
+        <h2>创建新博客</h2>
         <form id="create-post-form">
-            <input type="text" id="post-title" placeholder="Title" required>
-            <textarea id="post-content" placeholder="Content" required></textarea>
-            <div id="format-indicator">普通文本</div>
-            <button type="submit">Create Post</button>
+            <input type="text" id="post-title" placeholder="标题" required>
+            <div class="toolbar">
+                <button type="button" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                <button type="button" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                <button type="button" onclick="formatText('strikethrough')"><i class="fas fa-strikethrough"></i></button>
+                <button type="button" onclick="formatText('link')"><i class="fas fa-link"></i></button>
+                <button type="button" onclick="formatText('unorderedList')"><i class="fas fa-list-ul"></i></button>
+                <button type="button" onclick="formatText('orderedList')"><i class="fas fa-list-ol"></i></button>
+                <button type="button" onclick="formatText('image')"><i class="fas fa-image"></i></button>
+                <button type="button" onclick="formatText('horizontalRule')"><i class="fas fa-minus"></i></button>
+                <button type="button" onclick="formatText('codeBlock')"><i class="fas fa-code"></i></button>
+                <button type="button" onclick="toggleMarkdown()"><i class="fab fa-markdown"></i></button>
+                <button type="button" onclick="formatText('inlineCode')"><i class="fas fa-terminal"></i></button>
+            </div>
+            <textarea id="post-content" placeholder="内容" required></textarea>
+            <div id="only-me-toggle">
+                <input type="checkbox" id="only-me" name="only-me">
+                <label for="only-me">仅自己可见</label>
+            </div>
+            <div id="attachment-upload">
+                <input type="file" id="attachment-input" multiple>
+                <button type="button" onclick="uploadAttachment()">上传附件</button>
+            </div>
+            <ul id="attachment-list"></ul>
+            <button type="submit">发布博客</button>
         </form>
     `;
     document.getElementById('create-post-form').addEventListener('submit', handleCreatePost);
-    isMarkdownMode = false;
-    toggleFormat();
 }
 
-// Handle form submissions
 function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
@@ -294,7 +311,7 @@ function handleLogin(e) {
         if (data.token && data.username) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('username', data.username);
-            showMessage('Login successful!');
+            showMessage('登录成功！');
             updateNavigation();
             showPosts();
         } else {
@@ -303,7 +320,111 @@ function handleLogin(e) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showMessage('An error occurred during login: ' + error.message, true);
+        showMessage('登录时出错: ' + error.message, true);
+    });
+}
+
+function handleRegister(e) {
+    e.preventDefault();
+    const username = document.getElementById('register-username').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+
+    fetch('/blog-system/api/auth/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Registration failed');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', username);
+            showMessage('注册成功！');
+            updateNavigation();
+            showPosts();
+        } else {
+            throw new Error(data.msg || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('注册时出错: ' + error.message, true);
+    });
+}
+
+function handleCreatePost(e) {
+    e.preventDefault();
+    const title = document.getElementById('post-title').value;
+    const content = document.getElementById('post-content').value;
+    const onlyMe = document.getElementById('only-me').checked;
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        showMessage('请先登录再创建博客。', true);
+        return;
+    }
+
+    fetch('/blog-system/api/posts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token
+        },
+        body: JSON.stringify({ title, content, onlyMe }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to create post');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data._id) {
+            showMessage('博客创建成功！');
+            showPosts();
+        } else {
+            throw new Error(data.msg || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('创建博客时出错: ' + error.message, true);
+    });
+}
+
+function deletePost(postId) {
+    if (!confirm('您确定要删除这篇博客吗？')) {
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    fetch(`/blog-system/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+            'x-auth-token': token
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.msg === 'Post removed') {
+            showMessage('博客删除成功！');
+            showPosts();
+        } else {
+            throw new Error(data.msg || 'Failed to delete post');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('删除博客时出错: ' + error.message, true);
     });
 }
 
@@ -349,42 +470,6 @@ function updateNavigation() {
     console.log('Navigation updated');
 }
 
-function handleRegister(e) {
-    e.preventDefault();
-    const username = document.getElementById('register-username').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-
-    fetch('/blog-system/api/auth/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email, password }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Registration failed');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('username', username);
-            showMessage('Registration successful!');
-            updateNavigation();
-            showPosts();
-        } else {
-            throw new Error(data.msg || 'Unknown error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('An error occurred during registration: ' + error.message, true);
-    });
-}
-
 function handleLogout() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
@@ -392,71 +477,78 @@ function handleLogout() {
     showLoginForm();
 }
 
-function handleCreatePost(e) {
-    e.preventDefault();
-    const title = document.getElementById('post-title').value;
-    const content = document.getElementById('post-content').value;
-    const token = localStorage.getItem('token');
+function formatText(format) {
+    const textarea = document.getElementById('post-content') || document.getElementById('edit-post-content');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    let formattedText = '';
 
-    if (!token) {
-        showMessage('Please login to create a post.', true);
-        return;
+    switch(format) {
+        case 'bold':
+            formattedText = `**${selectedText}**`;
+            break;
+        case 'italic':
+            formattedText = `*${selectedText}*`;
+            break;
+        case 'strikethrough':
+            formattedText = `~~${selectedText}~~`;
+            break;
+        case 'link':
+            const url = prompt('Enter URL:');
+            formattedText = `[${selectedText}](${url})`;
+            break;
+        case 'unorderedList':
+            formattedText = `\n- ${selectedText}`;
+            break;
+        case 'orderedList':
+            formattedText = `\n1. ${selectedText}`;
+            break;
+        case 'image':
+            const imageUrl = prompt('Enter image URL:');
+            formattedText = `![${selectedText}](${imageUrl})`;
+            break;
+        case 'horizontalRule':
+            formattedText = `\n\n---\n\n`;
+            break;
+        case 'codeBlock':
+            formattedText = `\n\`\`\`\n${selectedText}\n\`\`\`\n`;
+            break;
+        case 'inlineCode':
+            formattedText = `\`${selectedText}\``;
+            break;
     }
 
-    fetch('/blog-system/api/posts', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': token
-        },
-        body: JSON.stringify({ title, content, isMarkdown: isMarkdownMode }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to create post');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data._id) {
-            showMessage('Post created successfully!');
-            showPosts();
-        } else {
-            throw new Error(data.msg || 'Unknown error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('An error occurred while creating the post: ' + error.message, true);
-    });
+    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    textarea.focus();
+    textarea.selectionStart = start + formattedText.length;
+    textarea.selectionEnd = start + formattedText.length;
 }
 
-function deletePost(postId) {
-    if (!confirm('您确定要删除这篇博客吗？')) {
+function toggleMarkdown() {
+    const textarea = document.getElementById('post-content') || document.getElementById('edit-post-content');
+    textarea.value = marked(textarea.value);
+}
+
+function uploadAttachment() {
+    const input = document.getElementById('attachment-input');
+    const files = input.files;
+    if (files.length === 0) {
+        showMessage('请选择要上传的文件', true);
         return;
     }
 
-    const token = localStorage.getItem('token');
+    // 这里应该实现文件上传的逻辑，可能需要创建一个新的API端点来处理文件上传
+    // 为了演示，我们只是将文件名添加到列表中
+    const attachmentList = document.getElementById('attachment-list');
+    for (let file of files) {
+        const li = document.createElement('li');
+        li.textContent = file.name;
+        attachmentList.appendChild(li);
+    }
 
-    fetch(`/blog-system/api/posts/${postId}`, {
-        method: 'DELETE',
-        headers: {
-            'x-auth-token': token
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.msg === 'Post removed') {
-            showMessage('Post deleted successfully!');
-            showPosts();
-        } else {
-            throw new Error(data.msg || 'Failed to delete post');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('An error occurred while deleting the post: ' + error.message, true);
-    });
+    showMessage('附件上传成功！');
+    input.value = ''; // 清空input，允许再次上传相同的文件
 }
 
 // Initialize the app

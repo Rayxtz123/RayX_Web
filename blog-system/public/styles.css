@@ -85,7 +85,7 @@ input, textarea {
 }
 
 textarea {
-  min-height: 150px;
+  min-height: 300px;
 }
 
 pre {
@@ -109,33 +109,65 @@ pre {
 }
 
 .button-group {
-    display: flex;
-    justify-content: flex-start;
-    gap: 10px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .button-group button {
-    flex: 0 1 auto;
+  flex: 0 1 auto;
 }
 
 #cancel-edit {
-    background-color: #e74c3c;
+  background-color: #e74c3c;
 }
 
 #cancel-edit:hover {
-    background-color: #c0392b;
-}
-
-#format-indicator {
-    margin-bottom: 10px;
-    font-style: italic;
-    color: #666;
+  background-color: #c0392b;
 }
 
 .markdown-content {
-    font-family: 'Courier New', Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
 }
 
-#toggle-format {
-    margin-bottom: 20px;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.toolbar button {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.toolbar button:hover {
+  background-color: #e0e0e0;
+}
+
+#only-me-toggle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#only-me-toggle input {
+  margin-right: 5px;
+}
+
+#attachment-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+#attachment-list li {
+  margin-bottom: 5px;
+}
+
+#attachment-upload {
+  margin-bottom: 10px;
 }

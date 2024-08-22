@@ -21,7 +21,15 @@ const PostSchema = new mongoose.Schema({
   isMarkdown: {
     type: Boolean,
     default: false
-  }
+  },
+  onlyMe: {
+    type: Boolean,
+    default: false
+  },
+  attachments: [{
+    filename: String,
+    path: String
+  }]
 });
 
 module.exports = mongoose.model('Post', PostSchema);

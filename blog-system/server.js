@@ -36,6 +36,9 @@ app.use('/blog-system/api/comments', require('./routes/comments'));
 // Serve static assets for /blog-system route
 app.use('/blog-system', express.static(path.join(__dirname, 'public')));
 
+// 在其他 app.use 语句之后添加
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Handle client-side routing
 app.get('/blog-system/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
