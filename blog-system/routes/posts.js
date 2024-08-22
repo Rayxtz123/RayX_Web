@@ -109,6 +109,7 @@ router.put('/:id', auth, upload.array('attachments', 5), async (req, res) => {
   }
 });
 
+
 // Delete a post
 router.delete('/:id', auth, async (req, res) => {
   try {

@@ -82,7 +82,12 @@ function showPostDetails(postId) {
     })
     .then(response => response.json())
     .then(post => {
-        const formattedContent = post.isMarkdown ? marked(post.content) : post.content;
+        let formattedContent;
+        if (post.isMarkdown) {
+            formattedContent = marked(post.content);
+        } else {
+            formattedContent = post.content.replace(/\n/g, '<br>');
+        }
         content.innerHTML = `
             <h2>${post.title}</h2>
             <div id="post-content" class="${post.isMarkdown ? 'markdown-content' : ''}">
@@ -118,6 +123,7 @@ function showPostDetails(postId) {
         showMessage('An error occurred while fetching post details: ' + error.message, true);
     });
 }
+
 
 function showEditForm(postId, title, postContent, isMarkdown) {
     console.log('showEditForm called with:', { postId, title, postContent, isMarkdown });
@@ -549,14 +555,14 @@ function toggleMarkdown() {
             .replace(/`(.+?)`/g, '$1')
             .replace(/```[\s\S]*?```/g, '');
         textarea.setAttribute('data-markdown', 'false');
-        markdownButton.textContent = 'Enable Markdown';
+        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> Enable Markdown';
     } else {
         // Convert from plain text to Markdown
         textarea.value = textarea.value
             .replace(/^(.+)$/gm, '# $1')
-            .replace(/^(.+)$/gm, (match, p1) => p1.startsWith('# ') ? p1 : `- ${p1}`);
+            .replace(/^# (.+)$/gm, (match, p1) => p1.startsWith('# ') ? p1 : `- ${p1}`);
         textarea.setAttribute('data-markdown', 'true');
-        markdownButton.textContent = 'Disable Markdown';
+        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> Disable Markdown';
     }
 }
 
