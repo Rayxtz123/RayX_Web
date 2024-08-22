@@ -170,13 +170,19 @@ function showEditForm(postId, title, postContent, isMarkdown) {
     
     const form = document.getElementById('edit-post-form');
     const cancelButton = document.getElementById('cancel-edit');
+    const textarea = document.getElementById('edit-post-content');
+    const markdownButton = document.querySelector('button[onclick="toggleMarkdown()"]');
+
+    // 设置初始状态
+    textarea.setAttribute('data-markdown', isMarkdown.toString());
+    markdownButton.innerHTML = isMarkdown ? '<i class="fab fa-markdown"></i> 禁用Markdown' : '<i class="fab fa-markdown"></i> 启用Markdown';
 
     if (form) {
         console.log('Form element found');
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Edit form submitted');
-            handleEditPost(postId, isMarkdown);
+            handleEditPost(postId, textarea.getAttribute('data-markdown') === 'true');
         });
         console.log('Form submit event listener added');
     } else {
@@ -193,6 +199,7 @@ function showEditForm(postId, title, postContent, isMarkdown) {
         console.error('Cancel button not found');
     }
 }
+
 
 function handleEditPost(postId, isMarkdown) {
     console.log('handleEditPost called with postId:', postId);
@@ -534,9 +541,10 @@ function formatText(format) {
 function toggleMarkdown() {
     const textarea = document.getElementById('post-content') || document.getElementById('edit-post-content');
     const markdownButton = document.querySelector('button[onclick="toggleMarkdown()"]');
+    const isMarkdown = textarea.getAttribute('data-markdown') === 'true';
     
-    if (textarea.getAttribute('data-markdown') === 'true') {
-        // Convert from Markdown to plain text
+    if (isMarkdown) {
+        // 从Markdown转换为普通文本
         textarea.value = textarea.value
             .replace(/^# (.+)$/gm, '$1')
             .replace(/^## (.+)$/gm, '$1')
@@ -546,25 +554,24 @@ function toggleMarkdown() {
             .replace(/^###### (.+)$/gm, '$1')
             .replace(/^\* (.+)$/gm, '$1')
             .replace(/^- (.+)$/gm, '$1')
-            .replace(/^1\. (.+)$/gm, '$1')
-            .replace(/\*\*(.+?)\*\*/g, '$1')
-            .replace(/\*(.+?)\*/g, '$1')
-            .replace(/~~(.+?)~~/g, '$1')
-            .replace(/\[(.+?)\]\((.+?)\)/g, '$1 ($2)')
-            .replace(/!\[(.+?)\]\((.+?)\)/g, 'Image: $1 ($2)')
-            .replace(/`(.+?)`/g, '$1')
-            .replace(/```[\s\S]*?```/g, '');
+            .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
         textarea.setAttribute('data-markdown', 'false');
-        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> Enable Markdown';
+        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> 启用Markdown';
     } else {
-        // Convert from plain text to Markdown
+        // 从普通文本转换为Markdown
         textarea.value = textarea.value
-            .replace(/^(.+)$/gm, '# $1')
-            .replace(/^# (.+)$/gm, (match, p1) => p1.startsWith('# ') ? p1 : `- ${p1}`);
+            .replace(/^(.+)$/gm, (match, p1) => {
+                if (p1.startsWith('#') || p1.startsWith('-') || p1.startsWith('*') || /^\d+\./.test(p1)) {
+                    return p1;  // 如果已经是Markdown格式，保持不变
+                } else {
+                    return `# ${p1}`;  // 否则，添加一级标题
+                }
+            });
         textarea.setAttribute('data-markdown', 'true');
-        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> Disable Markdown';
+        markdownButton.innerHTML = '<i class="fab fa-markdown"></i> 禁用Markdown';
     }
 }
+
 
 function uploadAttachment() {
     const input = document.getElementById('attachment-input');
