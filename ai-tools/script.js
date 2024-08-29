@@ -2,6 +2,7 @@ const chatMessages = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 const clearButton = document.createElement('button');
+const API_URL = 'http://43.153.65.171:5000/api/chat';
 
 clearButton.textContent = '清除历史';
 clearButton.id = 'clear-button';
@@ -40,7 +41,7 @@ async function sendMessage() {
         sendButton.textContent = '发送中...';
         
         try {
-            const response = await fetch('http://localhost:3000/api/chat', {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

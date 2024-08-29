@@ -7,7 +7,13 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+
+// 更新 CORS 配置
+app.use(cors({
+  origin: 'http://43.153.65.171',  // 或者使用你的域名，如果有的话
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
 
 // 创建 Anthropic 客户端实例
 const client = new Anthropic({
@@ -72,7 +78,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // 添加一些调试信息
