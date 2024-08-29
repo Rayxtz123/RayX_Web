@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI工具</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI工具</h1>
+        </header>
+        <div id="model-selection">
+            <label for="model-select">选择模型：</label>
+            <select id="model-select">
+                <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+            </select>
+        </div>
+        <main>
+            <div id="chat-container">
+                <div id="chat-messages"></div>
+                <div id="user-input">
+                    <textarea id="message-input" placeholder="输入您的消息..."></textarea>
+                    <button id="send-button">发送</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
